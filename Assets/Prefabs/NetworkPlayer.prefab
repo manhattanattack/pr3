@@ -552,7 +552,7 @@ RectTransform:
   m_Children:
   - {fileID: 90010005}
   - {fileID: 90010009}
-  m_Father: {fileID: 7015465348277027000}
+  m_Father: {fileID: 7015465348277026792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -802,7 +802,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7741372641155953000}
+  m_GameObject: {fileID: 7741372641155953140}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6e6473e8ecac41e4b9a94c3ea50bf99e, type: 3}
