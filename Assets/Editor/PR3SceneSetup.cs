@@ -8,8 +8,31 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+[InitializeOnLoad]
 public static class PR3SceneSetup
 {
+    // После первого импорта проекта автоматически создаём недостающие префабы,
+    // чтобы пользователь видел ПР3 без ручной настройки каждого объекта.
+    static PR3SceneSetup()
+    {
+        EditorApplication.delayCall += AutoSetupOnce;
+    }
+
+    private static void AutoSetupOnce()
+    {
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            EditorApplication.delayCall += AutoSetupOnce;
+            return;
+        }
+
+        // Префаб Projectile_Visual создаётся последним из подготовительных шагов
+        // и служит признаком выполненной сборки.
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath) != null) return;
+        Debug.Log("[PR3] Первое открытие проекта. Автоматически собираю боевую сцену...");
+        SetupInternal(false);
+    }
+
     private const string ScenePath = "Assets/Scenes/GameScene.unity";
     private const string NetworkPrefabPath = "Assets/Prefabs/NetworkPlayer.prefab";
     private const string LocalPrefabPath = "Assets/Prefabs/LocalPlayer.prefab";
@@ -19,12 +42,17 @@ public static class PR3SceneSetup
     [MenuItem("Tools/PR3/Собрать боевую сцену")]
     public static void Setup()
     {
+        SetupInternal(true);
+    }
+
+    private static void SetupInternal(bool interactive)
+    {
         if (EditorApplication.isPlayingOrWillChangePlaymode)
         {
             Debug.LogWarning("[PR3] Выйдите из Play Mode перед сборкой.");
             return;
         }
-        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        if (interactive && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
         try
         {
@@ -65,12 +93,13 @@ public static class PR3SceneSetup
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("[PR3] Сборка завершена: префабы, оружие, интерфейс HP, экран смерти, снаряд и сетевые ссылки готовы.");
-            EditorUtility.DisplayDialog("ПР3", "Сцена и префабы собраны! Проверьте Console и запускайте сервер/игру.", "ОК");
+            if (interactive)
+                EditorUtility.DisplayDialog("ПР3", "Сцена и префабы собраны! Проверьте Console и запускайте сервер/игру.", "ОК");
         }
         catch (Exception ex)
         {
             Debug.LogException(ex);
-            EditorUtility.DisplayDialog("ПР3: ошибка", ex.Message, "ОК");
+            if (interactive) EditorUtility.DisplayDialog("ПР3: ошибка", ex.Message, "ОК");
         }
     }
 
