@@ -382,40 +382,46 @@ function updateProjectiles(dt) {
             destroyProjectile(id, 'timeout');
             continue;
         }
-        // Сервер самостоятельно рассчитывает перемещение в каждом тике.
-        p.x += p.dx * PROJECTILE_SPEED * dt;
-        p.y += p.dy * PROJECTILE_SPEED * dt;
-        p.z += p.dz * PROJECTILE_SPEED * dt;
 
-        if (p.y <= 0.1 || p.y >= 10.0) {
-            destroyProjectile(id, 'floor');
-            continue;
-        }
+        // Дробим полёт на короткие отрезки: при 20 тиках/с
+        // один шаг в 0.9 м иначе может перескочить стену толщиной 0.4 м.
+        const steps = Math.max(1, Math.ceil(PROJECTILE_SPEED * dt / 0.15));
+        const distancePerStep = PROJECTILE_SPEED * dt / steps;
+        let destroyed = false;
 
-        let hitWall = false;
-        for (const wall of globalWalls) {
-            const halfX = wall.rot === 0 ? 2.0 : 0.2;
-            const halfZ = wall.rot === 0 ? 0.2 : 2.0;
-            if (p.x >= wall.x - halfX && p.x <= wall.x + halfX &&
-                p.z >= wall.z - halfZ && p.z <= wall.z + halfZ &&
-                p.y <= 3.0) {
-                hitWall = true;
+        for (let step = 0; step < steps && !destroyed; step++) {
+            p.x += p.dx * distancePerStep;
+            p.y += p.dy * distancePerStep;
+            p.z += p.dz * distancePerStep;
+
+            if (p.y <= 0.1 || p.y >= 10.0) {
+                destroyProjectile(id, 'floor');
                 break;
             }
-        }
-        if (hitWall) {
-            destroyProjectile(id, 'wall');
-            continue;
-        }
 
-        for (const [targetId, target] of players) {
-            if (targetId === p.ownerId || target.state.isDead) continue;
-            const distXZ = Math.hypot(target.state.x - p.x, target.state.z - p.z);
-            const distY = Math.abs(target.state.y + 1.0 - p.y);
-            if (distXZ <= PLAYER_HIT_RADIUS && distY <= 1.0) {
-                applyDamage(players.get(p.ownerId), target, RANGED_DAMAGE);
-                destroyProjectile(id, 'player');
-                break;
+            for (const wall of globalWalls) {
+                const halfX = wall.rot === 0 ? 2.0 : 0.2;
+                const halfZ = wall.rot === 0 ? 0.2 : 2.0;
+                if (p.x >= wall.x - halfX && p.x <= wall.x + halfX &&
+                    p.z >= wall.z - halfZ && p.z <= wall.z + halfZ &&
+                    p.y <= 3.0) {
+                    destroyProjectile(id, 'wall');
+                    destroyed = true;
+                    break;
+                }
+            }
+            if (destroyed) break;
+
+            for (const [targetId, target] of players) {
+                if (targetId === p.ownerId || target.state.isDead) continue;
+                const distXZ = Math.hypot(target.state.x - p.x, target.state.z - p.z);
+                const distY = Math.abs(target.state.y + 1.0 - p.y);
+                if (distXZ <= PLAYER_HIT_RADIUS && distY <= 1.0) {
+                    applyDamage(players.get(p.ownerId), target, RANGED_DAMAGE);
+                    destroyProjectile(id, 'player');
+                    destroyed = true;
+                    break;
+                }
             }
         }
     }
